@@ -33,13 +33,13 @@ jobs:
           cd app/appointment
           docker build -t appointment-app:${{ github.sha }} .
           docker tag appointment-app:${{ github.sha }} \
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:appointment-app-${{ github.sha }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:appointment-app-${{ github.sha }}
+            664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:appointment-app-${{ github.sha }}
+          docker push 664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:appointment-app-${{ github.sha }}
 
       - name: Build and Push Patient App
         run: |
           cd app/patient
           docker build -t patient-app:${{ github.sha }} .
           docker tag patient-app:${{ github.sha }} \
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:patient-app-${{ github.sha }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:patient-app-${{ github.sha }}
+            664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:patient-app-${{ github.sha }}
+          docker push 664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:patient-app-${{ github.sha }}
