@@ -1,0 +1,45 @@
+name: Build and Push to ECR Registery
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy (e.g., dev, staging, prod)"
+        required: true
+        type: string
+
+env:
+  AWS_REGION: "us-east-1" # Replace with your AWS region
+  TF_VERSION: "1.5.7"    # Replace with your desired Terraform version
+  ECR_REPOSITORY: "dev-ecr" # Replace with your ECR repository name
+
+jobs:
+  terraform:
+    name: "Terraform Deploy"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          # Required for private repositories
+          token: ${{ secrets.GITHUB_TOKEN }}
+               
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Build and Push Appointment App
+        run: |
+          cd app/appointment
+          docker build -t appointment-app:${{ github.sha }} .
+          docker tag appointment-app:${{ github.sha }} \
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:appointment-app-${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:appointment-app-${{ github.sha }}
+
+      - name: Build and Push Patient App
+        run: |
+          cd app/patient
+          docker build -t patient-app:${{ github.sha }} .
+          docker tag patient-app:${{ github.sha }} \
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:patient-app-${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:patient-app-${{ github.sha }}
