@@ -1,6 +1,6 @@
 #Terraform lock
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "terraform-locks"
+resource "aws_dynamodb_table" "terraform_lock" {
+  name         = "terraform-lock"
   hash_key     = "LockID"
   read_capacity  = 1
   write_capacity = 1
@@ -10,17 +10,6 @@ resource "aws_dynamodb_table" "terraform_locks" {
     type = "S"
   }
 }
-
-terraform {
-  backend "s3" {
-    bucket         = "sneha-terraform-bucket"
-    key            = "ec2-instance/usecase3/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-locks"
-  }
-}
-
-
 module "vpc" {
   source = "./modules/vpc"
 
