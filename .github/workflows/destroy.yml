@@ -36,7 +36,9 @@ jobs:
  
       # Step 5: Terraform Init
       - name: Terraform Init
-        run: terraform init 
+        run: |
+          cd infrastructure
+          terraform init 
 
       - name: Destroy
         run: |
