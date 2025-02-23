@@ -1,4 +1,4 @@
-name: Terraform Destroy
+name: Terraform Deploy Infra
 
 on:
   workflow_dispatch:
@@ -7,45 +7,69 @@ on:
         description: "Environment to deploy (e.g., dev, staging, prod)"
         required: true
         type: string
- 
-permissions:
-  id-token: write
-  contents: write
-  pull-requests: write
-  
+      destroy:
+        description: "If true, destroy the infrastructure instead of applying"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: "ap-south-1" # Replace with your AWS region
+  TF_VERSION: "1.5.7"    # Replace with your desired Terraform version
+  ECR_REPOSITORY: "dev-ecr" # Replace with your ECR repository name
+
 jobs:
   terraform:
+    name: "Terraform Deploy"
     runs-on: ubuntu-latest
- 
     steps:
-      # Step 1: Checkout Code
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
- 
-      # Step 2: Configure AWS Credentials
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: 'us-east-1'
- 
-      # Step 3: Setup Terraform 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.0.0
- 
-      # Step 5: Terraform Init
-      - name: Terraform Init
-        run: |
-          cd infrastructure
-          terraform init 
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Destroy
+      - name: Terraform Init
+        id: init
         run: |
           cd infrastructure
-          terraform destroy -auto-approve
+          terraform init
+
+      - name: Select or Create Terraform Workspace
+        id: workspace
+        run: |
+          cd infrastructure
+          terraform workspace select ${{ github.event.inputs.environment }} || \
+          terraform workspace new ${{ github.event.inputs.environment }}
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infrastructure
+          terraform plan -var="environment=${{ github.event.inputs.environment }}" -input=false -lock=false
+
+      - name: Terraform Apply
+        id: apply
+        if: ${{ github.event.inputs.destroy != 'true' }}
+        run: |
+          cd infrastructure
+          terraform apply -var="environment=${{ github.event.inputs.environment }}" -auto-approve -input=false -lock=false
+
+      - name: Terraform Destroy
+        id: destroy
+        if: ${{ github.event.inputs.destroy == 'true' }}
+        run: |
+          cd infrastructure
+          terraform destroy -var="environment=${{ github.event.inputs.environment }}" -auto-approve -input=false -lock=false
+
