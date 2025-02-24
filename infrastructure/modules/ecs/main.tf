@@ -15,7 +15,7 @@ resource "aws_ecs_task_definition" "patientservice" {
   container_definitions    = jsonencode([
     {
       name      = "${var.environment}-patientservice-container"
-      image     = "${var.ecr_repository_url}/patientservice:latest"
+      image     = "${outputs.ecr_repository_url}/patientservice:latest"
       essential = true
       portMappings = [
         {
@@ -37,7 +37,7 @@ resource "aws_ecs_task_definition" "appointmentservice" {
   container_definitions    = jsonencode([
     {
       name      = "${var.environment}-appointmentservice-container"
-      image     = "${var.ecr_repository_url}/appointmentservice:latest"
+      image     = "${outputs.ecr_repository_url}/appointmentservice:latest"
       essential = true
       portMappings = [
         {
