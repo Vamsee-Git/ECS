@@ -37,11 +37,11 @@ jobs:
       # Step 5: Build Docker images for microservices
       - name: Build Docker image for microservice1
         run: |
-          docker build -t patient-service ./patient  # Assuming Dockerfile is in the `microservice1` folder
+          docker build -t patient-service ./app/patient  # Assuming Dockerfile is in the `microservice1` folder
           
       - name: Build Docker image for microservice2
         run: |
-          docker build -t appointment-service ./appointment  # Assuming Dockerfile is in the `microservice2` folder
+          docker build -t appointment-service ./app/appointment  # Assuming Dockerfile is in the `microservice2` folder
 
       # Step 6: Tag and push Docker images to ECR
       - name: Push Docker image for microservice1
