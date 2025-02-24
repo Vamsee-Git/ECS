@@ -1,52 +1,57 @@
-name: Build and Push to ECR Registery
+name: Build and Push Docker Images to ECR
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment to deploy (e.g., dev, staging, prod)"
-        required: true
-        type: string
-
-env:
-  AWS_REGION: "us-east-1" # Replace with your AWS region
-  TF_VERSION: "1.5.7"    # Replace with your desired Terraform version
-  ECR_REPOSITORY: "dev-ecr" # Replace with your ECR repository name
+  push:
+    branches:
+      - main  # You can change this to the branch you want to trigger the action
 
 jobs:
-  terraform:
-    name: "Terraform Deploy"
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Check out the code
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          # Required for private repositories
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: actions/checkout@v2
+
+      # Step 2: Set up AWS CLI
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-               
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      
-      - name: Build and Push Appointment App
-        run: |
-          cd app/appointment
-          docker build -t appointment-app:${{ github.sha }} .
-          docker tag appointment-app:${{ github.sha }} \
-            664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:appointment-app-${{ github.sha }}
-          docker push 664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:appointment-app-${{ github.sha }}
+          aws-region: us-east-1  # Change to your preferred region
 
-      - name: Build and Push Patient App
+      # Step 3: Log in to Amazon ECR
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Step 4: Create ECR repositories (if they don't exist)
+      - name: Create ECR Repositories
         run: |
-          cd app/patient
-          docker build -t patient-app:${{ github.sha }} .
-          docker tag patient-app:${{ github.sha }} \
-            664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:patient-app-${{ github.sha }}
-          docker push 664418994073.dkr.ecr.us-east-1.amazonaws.com/dev-ecr:patient-app-${{ github.sha }}
+          aws ecr describe-repositories --repository-names patient-service|| \
+            aws ecr create-repository --repository-name patient-service
+          aws ecr describe-repositories --repository-names appointment-service || \
+            aws ecr create-repository --repository-name appointment-service
+
+      # Step 5: Build Docker images for microservices
+      - name: Build Docker image for microservice1
+        run: |
+          docker build -t patient-service ./patient  # Assuming Dockerfile is in the `microservice1` folder
+          
+      - name: Build Docker image for microservice2
+        run: |
+          docker build -t appointment-service ./appointment  # Assuming Dockerfile is in the `microservice2` folder
+
+      # Step 6: Tag and push Docker images to ECR
+      - name: Push Docker image for microservice1
+        run: |
+          ECR_URI=$(aws ecr describe-repositories --repository-name patient-service --query 'repositories[0].repositoryUri' --output text)
+          docker tag patient-service:latest $ECR_URI:latest
+          docker push $ECR_URI:latest
+
+      - name: Push Docker image for microservice2
+        run: |
+          ECR_URI=$(aws ecr describe-repositories --repository-name appointment-service --query 'repositories[0].repositoryUri' --output text)
+          docker tag appointment-service:latest $ECR_URI:latest
+          docker push $ECR_URI:latest
