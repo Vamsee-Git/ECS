@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main  # You can change this to the branch you want to trigger the action
+      
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
 
 jobs:
   deploy:
