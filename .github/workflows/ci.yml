@@ -15,12 +15,12 @@ jobs:
         uses: actions/checkout@v2
 
       # Step 2: Set up AWS CLI
-      - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Change to your preferred region
+          role-to-assume: arn:aws:iam::273354635930:role/github-vamsee
+          aws-region: ap-south-1
+          id-token: true
 
       # Step 3: Log in to Amazon ECR
       - name: Log in to Amazon ECR
